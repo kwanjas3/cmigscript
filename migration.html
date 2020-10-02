@@ -1,0 +1,133 @@
+<html>
+  <head>
+    <script
+      src="https://code.jquery.com/jquery-3.5.1.slim.min.js"
+      integrity="sha256-4+XzXVhsDmqanXGHaHvgh1gMQKX40OUvDEBTu8JcmNs="
+      crossorigin="anonymous"
+    ></script>
+    <script src="Stuk-jszip-v3.5.0-2-g25d401e\Stuk-jszip-25d401e\dist\jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.2/dist/FileSaver.min.js"></script>
+  </head>
+  <body>
+    <input type="file" id="file" name="file" />
+    <output id="list"></output>
+
+    <p>
+      Works on firefox, chrome , opera &gt;= 15 and IE &gt;= 10 (but NOT in
+      compatibility view).
+    </p>
+    <button id="blob" class="btn btn-primary">click to download</button>
+    <ul id="renderData"></ul>
+
+    <script>
+      var newZip = new JSZip();
+      function handleFileSelect(evt) {
+        var f = evt.target.files[0];
+
+
+
+        JSZip.loadAsync(f).then(
+          function (zip) {
+            zip.forEach(function (relativePath, zipEntry) {
+              //   console.log(zipEntry.name.includes('content.xml')?zipEntry.name :null);
+              console.log(zipEntry.name);
+              if (zipEntry.name.includes("content.xml")) {
+                zip
+                  .file(zipEntry.name)
+                  .async("string")
+                  .then((data) => {
+                    var parser = new DOMParser();
+                    var renderList = document.querySelector("#renderData");
+                    var createdNode = document.createElement("li");
+                    var text = document.createTextNode(data);
+                    createdNode.appendChild(text);
+                    renderList.appendChild(createdNode);
+                    var xmlDoc = parser.parseFromString(data, "text/xml");
+                    if (xmlDoc.querySelector('responsivegrid')) {
+                      //do nothing else
+                      const serializer = new XMLSerializer();
+                      const xmlStr = serializer.serializeToString(xmlDoc);
+                      //write to newZip
+                      newZip.file( zipEntry.name , xmlStr)
+                    } else {
+                      var rootNode = document.createElement("root");
+                    rootNode.setAttribute("jcr:primaryType", "nt:unstructured");
+                    rootNode.setAttribute(
+                      "sling:resourceType",
+                      "wcm/foundation/components/responsivegrid"
+                    );
+                    var responsiveGrid = document.createElement(
+                      "responsivegrid"
+                    );
+                    responsiveGrid.setAttribute(
+                      "jcr:primaryType",
+                      "nt:unstructured"
+                    );
+                    responsiveGrid.setAttribute(
+                      "sling:resourceType",
+                      "wcm/foundation/components/responsivegrid"
+                    );
+                    rootNode.appendChild(responsiveGrid);
+                    console.log(rootNode);
+                    console.log(xmlDoc);
+                    try {
+                      var savedContent = xmlDoc.querySelector("content")
+                        .innerHTML;
+                      xmlDoc.querySelector("content").innerHTML = "";
+                      xmlDoc.querySelector("content").appendChild(rootNode);
+                      responsiveGrid.innerHTML = savedContent;
+
+                      //look at path in zip and rewrite file in zip
+                    } catch (e) {
+                      console.log("could not find jcr:content node");
+                    }
+                    const serializer = new XMLSerializer();
+                    const xmlStr = serializer.serializeToString(xmlDoc);
+                    //write to newZip
+                    newZip.file( zipEntry.name , xmlStr)
+                    }
+
+                 
+                   
+                  });
+              }
+            });
+            var testXmlZipObject = zip.file("test.xml");
+            if (testXmlZipObject != null) {
+              testXmlZipObject.async("string").then(function (content) {
+                var parser = new DOMParser();
+                var xmlDoc = parser.parseFromString(content, "text/xml");
+                console.log(
+                  "text.xml: a->b = " +
+                    xmlDoc
+                      .getElementsByTagName("a")[0]
+                      .getElementsByTagName("b")[0].childNodes[0].nodeValue
+                );
+              });
+            }
+          },
+          function (e) {
+            console.log(e.message);
+          }
+        );
+      }
+
+      document
+        .getElementById("file")
+        .addEventListener("change", handleFileSelect, false);
+
+      //todo write back to zip file
+      jQuery("#blob").on("click", function () {
+        newZip.generateAsync({ type: "blob" }).then(
+          function (blob) {
+            // 1) generate the zip file
+            window.saveAs(blob, "newContent.zip"); // 2) trigger the download
+          },
+          function (err) {
+            jQuery("#blob").text(err);
+          }
+        );
+      });
+    </script>
+  </body>
+</html>
