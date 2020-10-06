@@ -5,8 +5,6 @@ zipped content file size limit is 50mbs
 
 
 
-JAVA VERSION
-
-AEM_XML.java
+JAVA VERSION - AEM_XML.java
 
 put extracted directory in same path, rename the filename to whatever
