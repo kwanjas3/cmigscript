@@ -7,4 +7,5 @@ zipped content file size limit is 50mbs
 
 JAVA VERSION - AEM_XML.java
 
-put extracted directory in same path, rename the filename to whatever
+put extracted directory in same path as java class
+modify line 57 to the path you are trying to add the root/responsive grid to (as per the TODO instructions)
